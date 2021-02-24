@@ -1,0 +1,93 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+install.packages("ISLR")
+```
+
+
+```{r}
+library(ISLR)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+```{r}
+data("Carseats")
+head(Carseats, 5) #view the column names and first 5 rows of data
+```
+```{r}
+#create linear regression model using Price as independent variable and Sales as dependent variable
+modelSales <- lm(Sales~Price, data = Carseats)
+summary(modelSales)
+```
+```{r}
+#linear regresson model using Price, Bad_Shelf, and Good_Shelf as independent variables
+library(dplyr)
+newData <- Carseats %>%
+  mutate(Bad = ifelse(ShelveLoc=="Bad", 1, 0)) %>%
+  mutate(Good = ifelse(ShelveLoc=="Good", 1, 0)) %>%
+  mutate(Bad_Shelf = Price * Bad) %>%
+  mutate(Good_Shelf= Price*Good)
+multLM <- lm(Sales~Price + Bad_Shelf + Good_Shelf, data = Carseats)
+summary(multLM)
+```
+```{r}
+#preload variables for prediction
+Bad <- data.frame(Price = c(0), Bad_Shelf= c(1),Good_Shelf=c(0), ShelveLoc=c("Bad"))
+Bad
+badMod <- predict(multLM, Bad, interval = "prediction")
+badMod
+```
+```{r}
+Med <- data.frame(Bad_Shelf = c(0), Good_Shelf=c(0), Price=c(0), ShelveLoc = c("Medium"))
+Med
+MedMod <- predict(multLM, Med, interval = "prediction")
+MedMod
+```
+```{r}
+priceDemand <- read.csv("/Users/mariadiaz/Downloads/PriceDemand.csv", header = TRUE)
+head(priceDemand, 3)
+```
+```{r}
+#linear regression model 
+priceMod <- lm(Qty~Price, data = priceDemand)
+summary(priceMod)
+```
+```{r}
+#check the minimum value of Price
+min(priceDemand$Price)
+#minimum value is above 0 so no need to mutate by adding 1
+#log transformation of Price
+library(dplyr)
+Price_lnAdj <- priceDemand %>% mutate(Price_ln = log(Price))
+tail(Price_lnAdj, 5)
+#linear-log model for transformed Price to Price_ln
+linLogPLn <- lm(Qty~Price_ln, data=Price_lnAdj)
+summary(linLogPLn)
+```
+```{r}
+#check Qty minimum
+min(priceDemand$Qty)
+library(dplyr)
+#transform the independent variable
+qtyLnData <- priceDemand %>% mutate(Qty_Ln = log(Qty))
+head(qtyLnData, 5) #confirmed transformation complete
+logLinMod <- lm(Qty_Ln ~ Price, data = qtyLnData)
+summary(logLinMod)
+```
+```{r}
+#create log log model 
+#merge datasets
+logLogDat <- cbind(qtyLnData, Price_lnAdj)
+logLogMod <- lm(Qty_Ln ~ Price_Ln, data = logLogDat)
+summary(logLogMod)
+```
+
+
+
